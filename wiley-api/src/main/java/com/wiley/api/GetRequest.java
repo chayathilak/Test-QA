@@ -3,6 +3,13 @@ package com.wiley.api;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+
+import javax.imageio.ImageIO;
+
 import org.apache.commons.lang3.StringUtils;
 import org.json.*;
 import org.testng.annotations.Test;
@@ -183,7 +190,7 @@ public class GetRequest {
 		assertTrue(isPassed);;
 	}
 
-	@Test(description="Check whether an image URL contains wodth 300",priority = 6)
+	@Test(description="Check whether an image URL contains wodth 300",priority = 7)
 	public void testImagesWidth() {	
 		//make the API call
 		Response response = RestAssured.given()
@@ -219,6 +226,56 @@ public class GetRequest {
 		if(url != null && url.contains("300")) {
 			isWidthOk = true;
 		}
+		assertTrue(isWidthOk);
+	}
+	
+	@Test(description="Check the image width using image information",priority = 8)
+	public void testImagesWidthUsingImageInformation() {	
+		//make the API call
+		Response response = RestAssured.given()
+				.baseUri("https://www.wiley.com/en-us/search/autocomplete/comp_00001H9J")
+				.param("term", "java")
+				.when()
+				.get();
+
+		System.out.println(response.asString());
+		//create JSON object using response JSON string
+		JSONObject resultJsonObject = new JSONObject(response.asString());		
+		
+		//get the products array from JSON object
+		JSONArray productsArray = resultJsonObject.getJSONArray("products");
+		
+		boolean isWidthOk = false;
+		
+		//get the first product from product json array
+		JSONObject productObject = productsArray.getJSONObject(0);
+		
+		//get the image array of first product
+		JSONArray imageArray =  productObject.getJSONArray("images");
+		
+		//get the first image JSON object from image array
+		JSONObject imageObject = imageArray.getJSONObject(0);
+
+		//get the value of Image UDL
+		String url = imageObject.getString("url");
+
+		try {
+			URL imageUrl = new URL(url);
+			URLConnection conn = imageUrl.openConnection();	
+			InputStream in = conn.getInputStream();
+			BufferedImage image = ImageIO.read(in);
+			
+			int width = image.getWidth();
+			System.out.println("image width:" + width);
+			
+			if(width == 300) {
+				isWidthOk = true;
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		assertTrue(isWidthOk);
 	}
 }
